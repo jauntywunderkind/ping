@@ -1,35 +1,30 @@
 {
-  "name": "ping-lite",
-  "version": "2.0.2",
-  "description": "A very simple ping wrapper",
-  "keywords": [
-    "ping",
-    "tcp",
-    "icmp"
-  ],
-  "scripts": {
-    "test": "cd test && mocha ./"
-  },
-  "author": {
-    "name": "Ben Bradley",
-    "email": "ben@bradleyit.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/ben-bradley/ping-lite"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "mocha": "*"
-  },
-  "browser": {},
-  "main": "ping-lite.js",
-  "engines": {
-    "node": "*"
-  },
-  "readmeFilename": "Readme.md",
-  "bugs": {
-    "url": "https://github.com/ben-bradley/ping-lite/issues"
-  },
-  "homepage": "https://github.com/ben-bradley/ping-lite"
+	"name": "@jauntywunderkind/ping",
+	"version": "2.0.2",
+	"description": "A very simple ping wrapper",
+	"type": "module",
+	"keywords": [
+		"ping",
+		"tcp",
+		"icmp"
+	],
+	"scripts": {
+		"test": "node .test/index.js"
+	},
+	"author": "jauntywunderkind",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/jauntywunderkind/ping"
+	},
+	"dependencies": {},
+	"devDependencies": {
+	},
+	"main": "ping.js",
+	"engines": {
+		"node": "*"
+	},
+	"bugs": {
+		"url": "https://github.com/jauntywunderkind/ping/issues"
+	},
+	"homepage": "https://github.com/jauntywunderkind/ping"
 }
