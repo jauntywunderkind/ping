@@ -1,49 +1,47 @@
-var spawn = require('child_process').spawn,
-		events = require('events'),
-		fs = require('fs'),
-		WIN = /^win/.test(process.platform),
-		LIN = /^linux/.test(process.platform),
-		MAC = /^darwin/.test(process.platform);
+#!/usr/bin/env node
+"use module"
+import DNS from "dns"
+import net from "net"
+import ChildProcess from "child_process"
+import AsyncLift from "processification/async-lift.js"
 
-module.exports = Ping;
+const Dns= DNS.promise
 
-function Ping(host, options) {
-	if (!host)
-		throw new Error('You must specify a host to ping!');
+export const ping= AsyncLift( async function ping( res, rej, self, ip, opts){
+	const process_= opts.process|| process
+	self.timeStart= process_.hrtime.bigint()
 
-	this._host = host;
-	this._options = options = (options || {});
-
-	events.EventEmitter.call(this);
-
-	if (WIN) {
-		this._bin = 'c:/windows/system32/ping.exe';
-		this._args = (options.args) ? options.args : [ '-n', '1', '-w', '5000', host ];
-		this._regmatch = /[><=]([0-9.]+?) ms/;
+	// munge arguments
+	if( typeof ip!== "string"&& !opts){
+		opts= ip
+		self.ip= opts.ip
+	}else{
+		self.ip= ip
 	}
-	else if (LIN) {
-		this._bin = '/bin/ping';
-		this._args = (options.args) ? options.args : [ '-n', '-w', '2', '-c', '1', host ];
-		this._regmatch = /=([0-9.]+?) ms/; // need to verify this
-	}
-	else if (MAC) {
-		this._bin = '/sbin/ping';
-		this._args = (options.args) ? options.args : [ '-n', '-t', '2', '-c', '1', host ];
-		this._regmatch = /=([0-9.]+?) ms/;
-	}
-	else {
-		throw new Error('Could not detect your ping binary.');
+	if( !self.ip){
+		throw new Error( "No ip or host to ping found")
 	}
 
-	if (!fs.existsSync(this._bin))
-		throw new Error('Could not detect '+this._bin+' on your system');
+	// read in options
+	self.bin= opts.bin|| "/bin/ping"
+	self.regex= opts.regex|| /[><=]([0-9.]+?) ms/
+	self.timeout= Number.parseInt( opts.timeout|| 8000)
+	self.count= Number.parseInt( opts.count|| 1)
 
-	this._i = 0;
+	// ping
+	const args=[ "-n", "-t", self.timeout, "-c", self.count]
+	self.ping= ChildProcess.spawn( self.bin, args)
 
-	return this;
-}
-
-Ping.prototype.__proto__ = events.EventEmitter.prototype;
+	self.ping.on( "error", rej)
+	const data= []
+	self.ping.stdout.on( "data", function( datum){ data.push( datum) })
+	self.ping.stdout.on( "end", function(){
+		
+	})
+	self.ping.on( "exit", function( code){
+	})
+})
+export default ping
 
 // SEND A PING
 // ===========
@@ -96,20 +94,4 @@ Ping.prototype.send = function(callback) {
 
 		callback(null, ms);
 	}
-};
-
-// CALL Ping#send(callback) ON A TIMER
-// ===================================
-Ping.prototype.start = function(callback) {
-	var self = this;
-	this._i = setInterval(function() {
-		self.send(callback);
-	}, (self._options.interval || 5000));
-	self.send(callback);
-};
-
-// STOP SENDING PINGS
-// ==================
-Ping.prototype.stop = function() {
-	clearInterval(this._i);
 };
