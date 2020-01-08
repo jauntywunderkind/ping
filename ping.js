@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 "use module"
+import Pipe from "async-iter-pipe"
 import Split from "async-iter-split"
 import ChildProcess from "child_process"
-import AsyncLift from "processification/async-lift.js"
-
-const Dns= DNS.promise
 
 const aliases= {
 	ipv4: 4,
@@ -30,46 +28,60 @@ const aliases= {
 	timeout: "W"
 }
 
-export const Ping= AsyncLift( async function ping( res, rej, self, dest, opts= {}){
-	const process_= opts.process|| process
-	self.timeStart= process_.hrtime.bigint()
-
-	// munge arguments
-	if( typeof dest!== "string"&& !opts){
+export function Ping( dest, opts){
+	if( opts=== undefined&& typeof dest!== "string"){
 		opts= dest
-		self.dest= opts.dest
-	}else{
-		self.dest= dest
+		dest= opts.dest
 	}
-	if( !self.dest){
+	if( !dest){
 		throw new Error( "No destination to ping found")
 	}
+	this.dest= dest
+	Pipe.call( this, opts)
+	Object.assign( this, opts)
 
-	// read in base options
-	self.bin= opts.bin|| "/bin/ping"
-	self.regex= opts.regex|| /[><=]([0-9.]+?) ms/
-	// default ping options
-	self.timeout= Number.parseInt( opts.timeout|| 8000)
-	self.count= Number.parseInt( opts.count|| 1)
-	self.numeric= opts.numeric!== undefined? opts.numeric: true
-	// pull in remaining ping options
-	const args=[ ...(opts.args|| [])]
+	if( !this.noStart)
+		this.start()
+	}
+	return this
+}
+export {
+	Ping as default,
+	Ping as ping
+}
+Ping.prototype= Object.create( Pipe.prototype)
+Ping.prototype.constructor= Ping
+
+// default base options
+Ping.prototype.bin= "/bin/ping"
+Ping.prototype.regex= /[><=]([0-9.]+?) ms/
+// default ping arguments
+Ping.prototype.interval= 5
+Ping.prototype.numeric= true
+
+Ping.prototype.args= function( onto= []){
 	for( const [ longOpt, shortOpt] of Object.entries( aliases)){
-		const val= opts[ shortOpt]|| opts[ longOpt]|| self[ longOpt]
-		if( val){
-			// add arg
-			args.push( `-${shortOpt}`,...( val!== true?[ val]: []))
-			// write value to self
-			self[ longOpt]= val
+		const val= this[ shortOpt]|| this[ longOpt]
+		if( val=== true){
+			onto.push( `-${shortOpt}`)
+		}else if( val){
+			onto.push( `-${shortOpt}`, val)
 		}
 	}
-	args.push( self.dest)
+	onto.push( self.dest)
+	return onto
+}
+
+Ping.prototype.start= function(){
+	if( this.timeStart){
+		return false
+	}
+	this.timeStart= process_.hrtime.bigint()
 
 	// ping!
-	self.ping= ChildProcess.spawn( self.bin, args)
-	self.ping.on( "exit", function( code){
-		// we should get stdout & resolve before this
-		rej()
+	this.ping= ChildProcess.spawn( self.bin, args)
+	this.ping.on( "exit", function( code){
+		// TODO
 	})
 
 	// parse
@@ -92,10 +104,7 @@ export const Ping= AsyncLift( async function ping( res, rej, self, dest, opts= {
 	res( digit)
 	return digit
 })
-export {
-	Ping as default,
-	Ping as ping
-}
+
 
 export async function main(){
 	const
