@@ -38,14 +38,14 @@ export const ping= AsyncLift( async function ping( res, rej, self, dest, opts= {
 	self.timeStart= process_.hrtime.bigint()
 
 	// munge arguments
-	if( typeof ip!== "string"&& !opts){
-		opts= ip
-		self.ip= opts.ip
+	if( typeof dest!== "string"&& !opts){
+		opts= dest
+		self.dest= opts.dest
 	}else{
-		self.ip= ip
+		self.dest= dest
 	}
-	if( !self.ip){
-		throw new Error( "No ip or host to ping found")
+	if( !self.dest){
+		throw new Error( "No destination to ping found")
 	}
 
 	// read in options
