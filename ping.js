@@ -2,8 +2,6 @@
 "use module"
 import Split from "async-iter-split"
 import ChildProcess from "child_process"
-import DNS from "dns"
-import net from "net"
 import AsyncLift from "processification/async-lift.js"
 
 const Dns= DNS.promise
@@ -32,7 +30,7 @@ const aliases= {
 	timeout: "W"
 }
 
-export const ping= AsyncLift( async function ping( res, rej, self, dest, opts= {}){
+export const Ping= AsyncLift( async function ping( res, rej, self, dest, opts= {}){
 	const process_= opts.process|| process
 	self.timeStart= process_.hrtime.bigint()
 
@@ -94,7 +92,10 @@ export const ping= AsyncLift( async function ping( res, rej, self, dest, opts= {
 	res( digit)
 	return digit
 })
-export default ping
+export {
+	Ping as default,
+	Ping as ping
+}
 
 export async function main(){
 	const
