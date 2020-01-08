@@ -40,7 +40,7 @@ export function Ping( dest, opts){
 	Pipe.call( this, opts)
 	Object.assign( this, opts)
 
-	if( !this.noStart)
+	if( !this.noStart){
 		this.start()
 	}
 	return this
@@ -98,6 +98,9 @@ Ping.prototype.start= function(){
 		d= self.regex.exec( text.value),
 		// convert to number
 		digit= d&& Number.parseFloat( d[ 1])
+
+	// TODO: detect & report timeouts
+
 	if( !digit){
 		throw new Error( "unexpected reply")
 	}
