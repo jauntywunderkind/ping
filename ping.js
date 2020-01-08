@@ -8,7 +8,10 @@ import AsyncLift from "processification/async-lift.js"
 const Dns= DNS.promise
 
 const aliases= {
+	ipv4: 4,
+	ipv6: 6,
 	broadcast: "b",
+	bound: "B",
 	count: "c",
 	flow: "F",
 	interval: "i",
@@ -16,8 +19,11 @@ const aliases= {
 	preload: "l",
 	suppressLoopback: "L",
 	mark: "m",
+	pmtu: "M",
 	numeric: "n",
+	pad: "p",
 	qos: "Q",
+	bypassRouting: "r",
 	packetSize: "s",
 	sndbuf: "S",
 	ttl: "t",
