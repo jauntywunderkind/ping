@@ -1,11 +1,10 @@
 {
-	"name": "@jauntywunderkind/ping",
-	"version": "2.0.2",
-	"description": "A very simple ping wrapper",
+	"name": "async-iter-ping",
+	"version": "1.0.0",
+	"description": "wrapper for async-iter-ping",
 	"type": "module",
 	"keywords": [
-		"ping",
-		"tcp",
+		"async-iter-ping",
 		"icmp"
 	],
 	"scripts": {
@@ -14,19 +13,16 @@
 	"author": "jauntywunderkind",
 	"repository": {
 		"type": "git",
-		"url": "git://github.com/jauntywunderkind/ping"
+		"url": "https://github.com/jauntywunderkind/async-iter-ping"
 	},
 	"dependencies": {
 		"async-iter-split": "^1.0.0",
 		"processification": "^1.1.1"
 	},
 	"devDependencies": {},
-	"main": "ping.js",
+	"main": "async-iter-ping.js",
 	"engines": {
 		"node": "*"
 	},
-	"bugs": {
-		"url": "https://github.com/jauntywunderkind/ping/issues"
-	},
-	"homepage": "https://github.com/jauntywunderkind/ping"
+	"homepage": "https://github.com/jauntywunderkind/async-iter-ping"
 }
