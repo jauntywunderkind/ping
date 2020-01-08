@@ -47,49 +47,58 @@ export const ping= AsyncLift( async function ping( res, rej, self, dest, opts= {
 		throw new Error( "No destination to ping found")
 	}
 
-	// read in options
+	// read in base options
 	self.bin= opts.bin|| "/bin/ping"
 	self.regex= opts.regex|| /[><=]([0-9.]+?) ms/
-	// ping options
+	// default ping options
 	self.timeout= Number.parseInt( opts.timeout|| 8000)
 	self.count= Number.parseInt( opts.count|| 1)
 	self.numeric= opts.numeric!== undefined? opts.numeric: true
-
+	// pull in remaining ping options
 	const args=[ ...(opts.args|| [])]
 	for( const [ longOpt, shortOpt] of Object.entries( aliases)){
 		const val= opts[ shortOpt]|| opts[ longOpt]|| self[ longOpt]
-		console.log({ longOpt, shortOpt, val})
 		if( val){
+			// add arg
 			args.push( `-${shortOpt}`,...( val!== true?[ val]: []))
+			// write value to self
+			self[ longOpt]= val
 		}
 	}
 	args.push( self.dest)
 
-	// ping
-	console.log( args)
+	// ping!
 	self.ping= ChildProcess.spawn( self.bin, args)
-
-	const
-		lines= Split( self.ping.stdout),
-		header= lines.next(),
-		ping= lines.next()
-
 	self.ping.on( "exit", function( code){
+		// we should get stdout & resolve before this
 		rej()
 	})
 
+	// parse
 	const
+		// split ping lines
+		lines= Split( self.ping.stdout),
+		// ignore header
+		header= lines.next(),
+		// next line please!
+		ping= lines.next(),
+		// get that text
 		text= await ping,
-		d= self.regex.exec( text),
-		digit= d&& Number.parseFloat( d[ 0])
-	console.log({ text, d})
+		// find the digits
+		d= self.regex.exec( text.value),
+		// convert to number
+		digit= d&& Number.parseFloat( d[ 1])
+	if( !digit){
+		throw new Error( "unexpected reply")
+	}
+	res( digit)
 	return digit
 })
 export default ping
 
 export async function main(){
 	const
-		dest= process.argv[ 2]|| "1.1.1.1",
+		dest= process.argv[ 2]|| "127.0.0.1",
 		ms= await ping( dest)
 	console.log( ms)
 }
