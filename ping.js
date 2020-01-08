@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 "use module"
-import DNS from "dns"
-import net from "net"
+import Split from "async-iter-split"
 import ChildProcess from "child_process"
+import DNS from "dns"
+import { on} from "events"
+import net from "net"
 import AsyncLift from "processification/async-lift.js"
 
 const Dns= DNS.promise
@@ -67,66 +69,21 @@ export const ping= AsyncLift( async function ping( res, rej, self, dest, opts= {
 	// ping
 	self.ping= ChildProcess.spawn( self.bin, args.join( " "))
 
-	self.ping.on( "error", rej)
-	const data= []
-	self.ping.stdout.on( "data", function( datum){ data.push( datum) })
-	self.ping.stdout.on( "end", function(){
-		
-	})
+	const
+		stdout= on( self.ping.stdout, "data"),
+		stderr= on( self.ping.stderr, "data"),
+		lines= Split( stdout),
+		header= lines.next(),
+		ping= lines.next()
+
 	self.ping.on( "exit", function( code){
+		rej()
 	})
+
+	const
+		text= await ping,
+		d= self.regex.match( text),
+		digit= d&& Number.parseFloat( d[ 0])
+	return digit
 })
 export default ping
-
-// SEND A PING
-// ===========
-Ping.prototype.send = function(callback) {
-	var self = this;
-	callback = callback || function(err, ms) {
-		if (err) return self.emit('error', err);
-		else		 return self.emit('result', ms);
-	};
-
-	var _ended, _exited, _errored;
-
-	this._ping = spawn(this._bin, this._args); // spawn the binary
-
-	this._ping.on('error', function(err) { // handle binary errors
-		_errored = true;
-		callback(err);
-	});
-
-	this._ping.stdout.on('data', function(data) { // log stdout
-		this._stdout = (this._stdout || '') + data;
-	});
-
-	this._ping.stdout.on('end', function() {
-		_ended = true;
-		if (_exited && !_errored) onEnd.call(self._ping);
-	});
-
-	this._ping.stderr.on('data', function(data) { // log stderr
-		this._stderr = (this._stderr || '') + data;
-	});
-
-	this._ping.on('exit', function(code) { // handle complete
-		_exited = true;
-		if (_ended && !_errored) onEnd.call(self._ping);
-	});
-
-	function onEnd() {
-		var stdout = this.stdout._stdout,
-				stderr = this.stderr._stderr,
-				ms;
-
-		if (stderr)
-			return callback(new Error(stderr));
-		else if (!stdout)
-			return callback(new Error('No stdout detected'));
-
-		ms = stdout.match(self._regmatch); // parse out the ##ms response
-		ms = (ms && ms[1]) ? Number(ms[1]) : ms;
-
-		callback(null, ms);
-	}
-};
