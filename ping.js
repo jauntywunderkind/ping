@@ -3,7 +3,6 @@
 import Split from "async-iter-split"
 import ChildProcess from "child_process"
 import DNS from "dns"
-import { on} from "events"
 import net from "net"
 import AsyncLift from "processification/async-lift.js"
 
@@ -57,22 +56,21 @@ export const ping= AsyncLift( async function ping( res, rej, self, dest, opts= {
 	self.numeric= opts.numeric!== undefined? opts.numeric: true
 
 	const args=[ ...(opts.args|| [])]
-	for( const longOpt of aliases){
-		const
-			shortOpt= aliases[ longOpt],
-			val= opts[ shortOpt]|| opts[ longOpt]
+	for( const [ longOpt, shortOpt] of Object.entries( aliases)){
+		const val= opts[ shortOpt]|| opts[ longOpt]|| self[ longOpt]
+		console.log({ longOpt, shortOpt, val})
 		if( val){
-			args.push( `-${shortOpt}`,...( val!== true&&[ val]))
+			args.push( `-${shortOpt}`,...( val!== true?[ val]: []))
 		}
 	}
+	args.push( self.dest)
 
 	// ping
-	self.ping= ChildProcess.spawn( self.bin, args.join( " "))
+	console.log( args)
+	self.ping= ChildProcess.spawn( self.bin, args)
 
 	const
-		stdout= on( self.ping.stdout, "data"),
-		stderr= on( self.ping.stderr, "data"),
-		lines= Split( stdout),
+		lines= Split( self.ping.stdout),
 		header= lines.next(),
 		ping= lines.next()
 
@@ -82,8 +80,9 @@ export const ping= AsyncLift( async function ping( res, rej, self, dest, opts= {
 
 	const
 		text= await ping,
-		d= self.regex.match( text),
+		d= self.regex.exec( text),
 		digit= d&& Number.parseFloat( d[ 0])
+	console.log({ text, d})
 	return digit
 })
 export default ping
