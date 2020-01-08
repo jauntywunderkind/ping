@@ -16,9 +16,11 @@
 		"type": "git",
 		"url": "git://github.com/jauntywunderkind/ping"
 	},
-	"dependencies": {},
-	"devDependencies": {
+	"dependencies": {
+		"async-iter-split": "^1.0.0",
+		"processification": "^1.1.1"
 	},
+	"devDependencies": {},
 	"main": "ping.js",
 	"engines": {
 		"node": "*"

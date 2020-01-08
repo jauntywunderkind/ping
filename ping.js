@@ -7,7 +7,25 @@ import AsyncLift from "processification/async-lift.js"
 
 const Dns= DNS.promise
 
-export const ping= AsyncLift( async function ping( res, rej, self, ip, opts){
+const aliases= {
+	broadcast: "b",
+	count: "c",
+	flow: "F",
+	interval: "i",
+	interface: "I",
+	preload: "l",
+	suppressLoopback: "L",
+	mark: "m",
+	numeric: "n",
+	qos: "Q",
+	packetSize: "s",
+	sndbuf: "S",
+	ttl: "t",
+	deadline: "w",
+	timeout: "W"
+}
+
+export const ping= AsyncLift( async function ping( res, rej, self, dest, opts= {}){
 	const process_= opts.process|| process
 	self.timeStart= process_.hrtime.bigint()
 
@@ -25,12 +43,23 @@ export const ping= AsyncLift( async function ping( res, rej, self, ip, opts){
 	// read in options
 	self.bin= opts.bin|| "/bin/ping"
 	self.regex= opts.regex|| /[><=]([0-9.]+?) ms/
+	// ping options
 	self.timeout= Number.parseInt( opts.timeout|| 8000)
 	self.count= Number.parseInt( opts.count|| 1)
+	self.numeric= opts.numeric!== undefined? opts.numeric: true
+
+	const args=[ ...(opts.args|| [])]
+	for( const longOpt of aliases){
+		const
+			shortOpt= aliases[ longOpt],
+			val= opts[ shortOpt]|| opts[ longOpt]
+		if( val){
+			args.push( `-${shortOpt}`,...( val!== true&&[ val]))
+		}
+	}
 
 	// ping
-	const args=[ "-n", "-t", self.timeout, "-c", self.count]
-	self.ping= ChildProcess.spawn( self.bin, args)
+	self.ping= ChildProcess.spawn( self.bin, args.join( " "))
 
 	self.ping.on( "error", rej)
 	const data= []
