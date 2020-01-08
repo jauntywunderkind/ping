@@ -87,3 +87,13 @@ export const ping= AsyncLift( async function ping( res, rej, self, dest, opts= {
 	return digit
 })
 export default ping
+
+export async function main(){
+	const
+		dest= process.argv[ 2]|| "1.1.1.1",
+		ms= await ping( dest)
+	console.log( ms)
+}
+if( typeof process!== "undefined"&& `file://${ process.argv[ 1]}`=== import.meta.url){
+	main()
+}
