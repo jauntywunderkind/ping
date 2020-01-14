@@ -16,7 +16,7 @@
 		"url": "https://github.com/jauntywunderkind/async-iter-ping"
 	},
 	"dependencies": {
-		"async-iter-pipe": "^1.0.3",
+		"async-iter-map": "^1.0.1",
 		"async-iter-split": "^1.0.0",
 		"processification": "^1.1.1"
 	},

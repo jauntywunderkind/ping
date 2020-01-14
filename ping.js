@@ -1,10 +1,89 @@
 #!/usr/bin/env node
 "use module"
-import Pipe from "async-iter-pipe"
+import AsyncIterMap from "async-iter-map"
 import Split from "async-iter-split"
 import ChildProcess from "child_process"
+import DictInvert from "dict-invert"
 
-const aliases= {
+export const
+	BadSample= Symbol.for( "async-iter-ping:err"),
+	NoNetwork= Symbol.for( "async-iter-ping:err:no-network"),
+	Unreachable= Symbol.for( "async-iter-ping:err:unreachable"),
+	symbol= {
+		BadSample,
+		NoNetwork,
+		Unreachable
+	}
+export {
+	symbol as Symbol
+}
+
+export function Ping( dest, opt){
+	if( opt=== undefined&& typeof dest!== "string"){
+		opt= dest
+		dest= opt.dest
+	}
+	if( !dest){
+		throw new Error( "No destination to ping found")
+	}
+	this.dest= dest
+	AsyncIterMap.call( this, opt)
+	Object.assign( this, opt)
+	return this
+}
+export {
+	Ping as default,
+	Ping as ping
+}
+Ping.prototype= Object.create( AsyncIterMap.prototype, {
+	// default base arguments
+	_bin: {
+		value: "/bin/ping",
+		writable: true
+	},
+	_regex: {
+		value: /[><=]([0-9.]+?) ms/,
+		writable: true
+	},
+	// default ping arguments
+	interval: {
+		value: 5,
+		writable: true
+	},
+	numeric: {
+		value: true,
+		writable: true
+	},
+
+	// methods
+	args: {
+		value: args
+	},
+	map: { // extracts data out of ping input
+		value: map
+	},
+	once: {
+		value: once
+	},
+	start: {
+		value: start
+	},
+	stop: {
+		value: stop
+	},
+
+	[ Symbol.asyncIterator]: {
+		value: function(){
+			this.start()
+			return this
+		}
+	}
+})
+Ping.prototype.constructor= Ping
+
+// static property
+
+const alias= {
 	ipv4: 4,
 	ipv6: 6,
 	broadcast: "b",
@@ -27,40 +106,19 @@ const aliases= {
 	deadline: "w",
 	timeout: "W"
 }
-
-export function Ping( dest, opts){
-	if( opts=== undefined&& typeof dest!== "string"){
-		opts= dest
-		dest= opts.dest
+Object.defineProperties( Ping, {
+	alias: {
+		value: alias
+	},
+	short: {
+		value: DictInvert( alias)
 	}
-	if( !dest){
-		throw new Error( "No destination to ping found")
-	}
-	this.dest= dest
-	Pipe.call( this, opts)
-	Object.assign( this, opts)
+})
 
-	if( !this.noStart){
-		this.start()
-	}
-	return this
-}
-export {
-	Ping as default,
-	Ping as ping
-}
-Ping.prototype= Object.create( Pipe.prototype)
-Ping.prototype.constructor= Ping
+// prototype methods
 
-// default base options
-Ping.prototype.bin= "/bin/ping"
-Ping.prototype.regex= /[><=]([0-9.]+?) ms/
-// default ping arguments
-Ping.prototype.interval= 5
-Ping.prototype.numeric= true
-
-Ping.prototype.args= function( onto= []){
-	for( const [ longOpt, shortOpt] of Object.entries( aliases)){
+function args( onto= []){
+	for( const [ longOpt, shortOpt] of Object.entries( Ping.alias)){
 		const val= this[ shortOpt]|| this[ longOpt]
 		if( val=== true){
 			onto.push( `-${shortOpt}`)
@@ -68,52 +126,52 @@ Ping.prototype.args= function( onto= []){
 			onto.push( `-${shortOpt}`, val)
 		}
 	}
-	onto.push( self.dest)
+	onto.push( this.dest)
 	return onto
 }
 
-Ping.prototype.start= function(){
-	if( this.timeStart){
+function map( line){
+	const d= this._regex.exec( line)
+	if( !d){
+		return BadSample
+	}
+	return Number.parseFloat( d[ 1])
+}
+
+function start(){
+	if( this.ping){
 		return false
 	}
-	this.timeStart= process_.hrtime.bigint()
+	// count time!
+	this.timeStart= (this.process|| process.hrtime).bigint()
 
-	// ping!
-	this.ping= ChildProcess.spawn( self.bin, args)
-	this.ping.on( "exit", function( code){
-		// TODO
-	})
+	const args= this.args()
+	// start the ping program
+	this.ping= ChildProcess.spawn( this._bin, args)
+	// start splitting it into lines which will be input
+	this.input= Split( this.ping.stdout)
+	// drop first line, the header
+	this.input.next()
+}
 
-	// parse
-	const
-		// split ping lines
-		lines= Split( self.ping.stdout),
-		// ignore header
-		header= lines.next(),
-		// next line please!
-		ping= lines.next(),
-		// get that text
-		text= await ping,
-		// find the digits
-		d= self.regex.exec( text.value),
-		// convert to number
-		digit= d&& Number.parseFloat( d[ 1])
-
-	// TODO: detect & report timeouts
-
-	if( !digit){
-		throw new Error( "unexpected reply")
+function stop(){
+	if( this.ping){
+		this.ping.kill()
 	}
-	res( digit)
-	return digit
-})
+	this.input= null
+	this.ping= null
+}
 
+function once(){
+}
 
 export async function main(){
 	const
 		dest= process.argv[ 2]|| "127.0.0.1",
-		ms= await ping( dest)
-	console.log( ms)
+		ping= new Ping( dest)
+	for await( let ms of ping){
+		console.log( ms)
+	}
 }
 if( typeof process!== "undefined"&& `file://${ process.argv[ 1]}`=== import.meta.url){
 	main()
