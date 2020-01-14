@@ -6,13 +6,15 @@ import ChildProcess from "child_process"
 import DictInvert from "dict-invert"
 
 export const
-	BadSample= Symbol.for( "async-iter-ping:err"),
-	NoNetwork= Symbol.for( "async-iter-ping:err:no-network"),
-	Unreachable= Symbol.for( "async-iter-ping:err:unreachable"),
+	BadSample= Symbol.for( "async-iter-ping:err:bad-sample"),
+	NetworkUnreachable= Symbol.for( "async-iter-ping:err:unreachable:network"),
+	HostUnreachable= Symbol.for( "async-iter-ping:err:unreachable:host"),
 	symbol= {
 		BadSample,
-		NoNetwork,
-		Unreachable
+		Unreachable: {
+			Host: HostUnreachable,
+			Network: NetworkUnreachable
+		}
 	}
 export {
 	symbol as Symbol
@@ -47,7 +49,7 @@ Ping.prototype= Object.create( AsyncIterMap.prototype, {
 	},
 	// default ping arguments
 	interval: {
-		value: 5,
+		value: 2,
 		writable: true
 	},
 	numeric: {
@@ -83,35 +85,46 @@ Ping.prototype.constructor= Ping
 
 // static property
 
-const alias= {
-	ipv4: 4,
-	ipv6: 6,
-	broadcast: "b",
-	bound: "B",
-	count: "c",
-	flow: "F",
-	interval: "i",
-	interface: "I",
-	preload: "l",
-	suppressLoopback: "L",
-	mark: "m",
-	pmtu: "M",
-	numeric: "n",
-	pad: "p",
-	qos: "Q",
-	bypassRouting: "r",
-	packetSize: "s",
-	sndbuf: "S",
-	ttl: "t",
-	deadline: "w",
-	timeout: "W"
-}
+const
+	alias= {
+		ipv4: 4,
+		ipv6: 6,
+		broadcast: "b",
+		bound: "B",
+		count: "c",
+		flow: "F",
+		interval: "i",
+		interface: "I",
+		preload: "l",
+		suppressLoopback: "L",
+		mark: "m",
+		pmtu: "M",
+		numeric: "n",
+		pad: "p",
+		qos: "Q",
+		bypassRouting: "r",
+		packetSize: "s",
+		sndbuf: "S",
+		ttl: "t",
+		deadline: "w",
+		timeout: "W"
+	},
+	errorSymbol= {
+		"Destination Host Unreachable": symbol.HostUnreachable,
+		"Network is unreachable": symbol.NetworkUnreachable
+	}
 Object.defineProperties( Ping, {
 	alias: {
 		value: alias
 	},
 	short: {
 		value: DictInvert( alias)
+	},
+	symbol: {
+		value: symbol
+	},
+	errorSymbol: {
+		value: errorSymbol
 	}
 })
 
@@ -131,8 +144,16 @@ function args( onto= []){
 }
 
 function map( line){
+	if( !line){
+		throw new Error("Expected output")
+	}
 	const d= this._regex.exec( line)
 	if( !d){
+		for( const text of Ping.errorSymbol){
+			if( line.indexOf( text)!== -1){
+				return Ping.errorSymbol[ text]
+			}
+		}
 		return BadSample
 	}
 	return Number.parseFloat( d[ 1])
@@ -148,6 +169,12 @@ function start(){
 	const args= this.args()
 	// start the ping program
 	this.ping= ChildProcess.spawn( this._bin, args)
+
+	// send stderror to stdout
+	this.ping.stderr.setEncoding( this.encoding|| "utf8")
+	// TODO: this does not work
+	// perhaps some day https://github.com/libuv/libuv/pull/2598
+	this.ping.stderr.pipe( this.ping.stdout)
 	// start splitting it into lines which will be input
 	this.input= Split( this.ping.stdout)
 	// drop first line, the header

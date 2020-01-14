@@ -1,7 +1,7 @@
 {
 	"name": "async-iter-ping",
 	"version": "1.0.0",
-	"description": "wrapper for async-iter-ping",
+	"description": "wrapper for ping",
 	"type": "module",
 	"keywords": [
 		"async-iter-ping",
