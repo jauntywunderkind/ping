@@ -3,6 +3,7 @@
 import AsyncIterMap from "async-iter-map"
 import Split from "async-iter-split"
 import ChildProcess from "child_process"
+import Mux from "async-iter-mux/mux.js"
 import DictInvert from "dict-invert"
 
 export const
@@ -170,15 +171,18 @@ function start(){
 	// start the ping program
 	this.ping= ChildProcess.spawn( this._bin, args)
 
-	// send stderror to stdout
+	// set encoding
 	this.ping.stderr.setEncoding( this.encoding|| "utf8")
-	// TODO: this does not work
-	// perhaps some day https://github.com/libuv/libuv/pull/2598
-	this.ping.stderr.pipe( this.ping.stdout)
-	// start splitting it into lines which will be input
-	this.input= Split( this.ping.stdout)
-	// drop first line, the header
-	this.input.next()
+	this.ping.stdout.setEncoding( this.encoding|| "utf8")
+
+	// split into lines which will be input
+	const
+		stdout= Split( this.ping.stdout),
+		stderr= Split( this.ping.stderr)
+	// take & drop first line, the header
+	stdout.next()
+	// combine stdin and stderr
+	this.input= new Mux({ streams:[ stdout, stderr]})
 }
 
 function stop(){

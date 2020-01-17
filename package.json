@@ -17,6 +17,7 @@
 	},
 	"dependencies": {
 		"async-iter-map": "^1.0.1",
+		"async-iter-mux": "^1.0.1",
 		"async-iter-split": "^1.0.0",
 		"processification": "^1.1.1"
 	},
