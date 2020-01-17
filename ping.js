@@ -12,6 +12,8 @@ export const
 	HostUnreachable= Symbol.for( "async-iter-ping:err:unreachable:host"),
 	symbol= {
 		BadSample,
+		HostUnreachable,
+		NetworkUnreachable,
 		Unreachable: {
 			Host: HostUnreachable,
 			Network: NetworkUnreachable
@@ -56,6 +58,18 @@ Ping.prototype= Object.create( AsyncIterMap.prototype, {
 	numeric: {
 		value: true,
 		writable: true
+	},
+
+	// reexposed globals
+	errorSymbol: {
+		get: function(){
+			return Ping.errorSymbol
+		}
+	},
+	alias: {
+		get: function(){
+			return Ping.alias
+		}
 	},
 
 	// methods
@@ -132,7 +146,7 @@ Object.defineProperties( Ping, {
 // prototype methods
 
 function args( onto= []){
-	for( const [ longOpt, shortOpt] of Object.entries( Ping.alias)){
+	for( const [ longOpt, shortOpt] of Object.entries( this.alias)){
 		const val= this[ shortOpt]|| this[ longOpt]
 		if( val=== true){
 			onto.push( `-${shortOpt}`)
@@ -150,9 +164,9 @@ function map( line){
 	}
 	const d= this._regex.exec( line)
 	if( !d){
-		for( const text of Ping.errorSymbol){
-			if( line.indexOf( text)!== -1){
-				return Ping.errorSymbol[ text]
+		for( const errorText in this.errorSymbol){
+			if( line.indexOf( errorText)!== -1){
+				return this.errorSymbol[ errorText]
 			}
 		}
 		return BadSample
