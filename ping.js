@@ -124,7 +124,7 @@ const
 		deadline: "w",
 		timeout: "W"
 	},
-	errorSymbol= {
+	errorText= {
 		"Destination Host Unreachable": symbol.HostUnreachable,
 		"Network is unreachable": symbol.NetworkUnreachable
 	}
@@ -138,8 +138,8 @@ Object.defineProperties( Ping, {
 	symbol: {
 		value: symbol
 	},
-	errorSymbol: {
-		value: errorSymbol
+	errorText: {
+		value: errorText
 	}
 })
 
@@ -164,9 +164,16 @@ function map( line){
 	}
 	const d= this._regex.exec( line)
 	if( !d){
-		for( const errorText in this.errorSymbol){
+		if( this.dropUnreachable){
+			return AsyncIterMap.Symbol.DropItem
+		}
+		for( const errorText in this.errorText){
 			if( line.indexOf( errorText)!== -1){
-				return this.errorSymbol[ errorText]
+				const symbol= this.errorText[ errorText]
+				if( this.drop&& this.drop( symbol)){
+					return AsyncIterMap.Symbol.DropItem
+				}
+				return symbol
 			}
 		}
 		return BadSample
