@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use module"
-import AsyncIterMap from "async-iter-map"
+import AsyncIterMap,{ DropItem} from "async-iter-map"
 import Split from "async-iter-split"
 import ChildProcess from "child_process"
 import Mux from "async-iter-mux/mux.js"
@@ -165,18 +165,21 @@ function map( line){
 	const d= this._regex.exec( line)
 	if( !d){
 		if( this.dropUnreachable){
-			return AsyncIterMap.Symbol.DropItem
+			return DropItem
 		}
 		for( const errorText in this.errorText){
 			if( line.indexOf( errorText)!== -1){
 				const symbol= this.errorText[ errorText]
 				if( this.drop&& this.drop( symbol)){
-					return AsyncIterMap.Symbol.DropItem
+					return DropItem
 				}
 				return symbol
 			}
 		}
 		return BadSample
+	}
+	if( this.dropPing){ // show only non-pings
+		return DropItem
 	}
 	return Number.parseFloat( d[ 1])
 }
